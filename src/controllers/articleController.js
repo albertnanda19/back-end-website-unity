@@ -8,8 +8,24 @@ const getAllArticles = async (req, res) => {
     const articles = await Article.find(
       {},
       { __v: 0, "contents._id": 0, "contents.__v": 0 }
-    );
-    res.json(articles);
+    ).lean();
+
+    const transformedArticles = articles.map((article) => {
+      const transformedContents = article.contents.map((content) => ({
+        ...content,
+        id: content._id,
+        _id: undefined,
+      }));
+
+      return {
+        id: article._id,
+        ...article,
+        _id: undefined,
+        contents: transformedContents,
+      };
+    });
+
+    res.json(transformedArticles);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
