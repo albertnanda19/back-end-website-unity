@@ -5,7 +5,10 @@ const { v4: uuidv4 } = require("uuid");
 
 const getAllArticles = async (req, res) => {
   try {
-    const articles = await Article.find();
+    const articles = await Article.find(
+      {},
+      { __v: 0, "contents._id": 0, "contents.__v": 0 }
+    );
     res.json(articles);
   } catch (error) {
     res.status(500).json({ message: error.message });
