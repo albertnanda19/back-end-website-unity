@@ -16,7 +16,6 @@ const addArticle = async (req, res) => {
   const { title, thumbnail, contents } = req.body;
 
   try {
-    // Handle image uploads
     const thumbnailName = `${uuidv4()}.png`;
     const thumbnailPath = path.join(
       __dirname,
@@ -53,7 +52,6 @@ const updateArticle = async (req, res) => {
   const { title, thumbnail, contents } = req.body;
 
   try {
-    // Handle image updates
     const images = contents.filter(
       (content) => content.content_type === "image"
     );
@@ -84,7 +82,6 @@ const deleteArticle = async (req, res) => {
   try {
     const article = await Article.findById(req.params.idArticle);
 
-    // Delete thumbnail
     const thumbnailPath = path.join(
       __dirname,
       "../src/images/article-images/thumbnail",
@@ -92,7 +89,6 @@ const deleteArticle = async (req, res) => {
     );
     fs.unlinkSync(thumbnailPath);
 
-    // Delete images
     article.contents.forEach((content) => {
       if (content.content_type === "image") {
         const imagePath = path.join(
