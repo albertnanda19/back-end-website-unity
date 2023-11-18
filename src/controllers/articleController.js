@@ -42,23 +42,32 @@ const addArticle = async (req, res) => {
     );
     fs.writeFileSync(thumbnailPath, thumbnail, "base64");
 
-    const images = contents.filter(
-      (content) => content.content_type === "image"
-    );
-    images.forEach((image, index) => {
-      const imageName = `${uuidv4()}.png`;
-      const imagePath = path.join(
-        __dirname,
-        `../images/article-images/images/${imageName}`
-      );
-      fs.writeFileSync(imagePath, image.image_url, "base64");
-      contents[index].image_url = imageName;
+    const newContents = contents.map((content) => {
+      if (content.content_type === "image") {
+        const imageName = `${uuidv4()}.png`;
+        const imagePath = path.join(
+          __dirname,
+          `../images/article-images/images/${imageName}`
+        );
+        fs.writeFileSync(imagePath, content.image_url, "base64");
+        return {
+          content_type: "image",
+          image_url: imageName,
+        };
+      } else if (content.content_type === "text") {
+        return {
+          content_type: "text",
+          text: content.text,
+        };
+      } else {
+        throw new Error("Invalid content_type");
+      }
     });
 
     const newArticle = new Article({
       title,
       thumbnail: thumbnailName,
-      contents,
+      contents: newContents,
     });
     await newArticle.save();
     res.status(201).json(newArticle);
