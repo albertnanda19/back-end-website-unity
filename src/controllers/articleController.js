@@ -35,20 +35,32 @@ const addArticle = async (req, res) => {
   const { title, thumbnail, contents } = req.body;
 
   try {
-    const thumbnailName = `${uuidv4()}.png`;
-    const thumbnailPath = path.join(
+    const newArticle = new Article({
+      title,
+      thumbnail,
+      contents,
+    });
+    await newArticle.save();
+
+    const articleId = newArticle._id.toString(); // Mengonversi _id menjadi string
+
+    // Membuat folder untuk artikel dengan menggunakan id artikel
+    const articleFolder = path.join(
       __dirname,
-      `../images/article-images/thumbnail/${thumbnailName}`
+      `../images/article-images/${articleId}`
     );
+    fs.mkdirSync(articleFolder);
+
+    // Memberi nama thumbnail dengan menggunakan uuid
+    const thumbnailName = `${uuidv4()}.png`;
+    const thumbnailPath = path.join(articleFolder, thumbnailName);
     fs.writeFileSync(thumbnailPath, thumbnail, "base64");
 
     const newContents = contents.map((content) => {
       if (content.content_type === "image") {
+        // Memberi nama file image dengan menggunakan uuid
         const imageName = `${uuidv4()}.png`;
-        const imagePath = path.join(
-          __dirname,
-          `../images/article-images/images/${imageName}`
-        );
+        const imagePath = path.join(articleFolder, imageName);
         fs.writeFileSync(imagePath, content.image_url, "base64");
         return {
           content_type: "image",
@@ -64,12 +76,10 @@ const addArticle = async (req, res) => {
       }
     });
 
-    const newArticle = new Article({
-      title,
-      thumbnail: thumbnailName,
-      contents: newContents,
-    });
+    newArticle.thumbnail = thumbnailName;
+    newArticle.contents = newContents;
     await newArticle.save();
+
     res.status(201).json(newArticle);
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -80,16 +90,23 @@ const updateArticle = async (req, res) => {
   const { title, thumbnail, contents } = req.body;
 
   try {
+    const articleId = req.params.idArticle;
+    const articleFolder = path.join(
+      __dirname,
+      `../images/article-images/${articleId}`
+    );
+
+    // Membuat folder artikel jika belum ada
+    if (!fs.existsSync(articleFolder)) {
+      fs.mkdirSync(articleFolder);
+    }
+
     const images = contents.filter(
       (content) => content.content_type === "image"
     );
     images.forEach((image, index) => {
       const imageName = `${uuidv4()}.png`;
-      const imagePath = path.join(
-        __dirname,
-        "../src/images/article-images/images",
-        imageName
-      );
+      const imagePath = path.join(articleFolder, imageName);
       fs.writeFileSync(imagePath, image.image_url, "base64");
       contents[index].image_url = imageName;
     });
@@ -108,26 +125,16 @@ const updateArticle = async (req, res) => {
 
 const deleteArticle = async (req, res) => {
   try {
-    const article = await Article.findById(req.params.idArticle);
-
-    const thumbnailPath = path.join(
+    const articleId = req.params.idArticle;
+    const articleFolder = path.join(
       __dirname,
-      "../src/images/article-images/thumbnail",
-      article.thumbnail
+      `../images/article-images/${articleId}`
     );
-    fs.unlinkSync(thumbnailPath);
 
-    article.contents.forEach((content) => {
-      if (content.content_type === "image") {
-        const imagePath = path.join(
-          __dirname,
-          "../src/images/article-images/images",
-          content.image_url
-        );
-        fs.unlinkSync(imagePath);
-      }
-    });
+    // Menghapus folder artikel beserta isinya
+    fs.rmdirSync(articleFolder, { recursive: true });
 
+    // Menghapus artikel dari database
     await Article.findByIdAndDelete(req.params.idArticle);
     res.json({ message: "Article deleted" });
   } catch (error) {
