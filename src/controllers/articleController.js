@@ -42,23 +42,20 @@ const addArticle = async (req, res) => {
     });
     await newArticle.save();
 
-    const articleId = newArticle._id.toString(); // Mengonversi _id menjadi string
+    const articleId = newArticle._id.toString();
 
-    // Membuat folder untuk artikel dengan menggunakan id artikel
     const articleFolder = path.join(
       __dirname,
       `../images/article-images/${articleId}`
     );
     fs.mkdirSync(articleFolder);
 
-    // Memberi nama thumbnail dengan menggunakan uuid
     const thumbnailName = `${uuidv4()}.png`;
     const thumbnailPath = path.join(articleFolder, thumbnailName);
     fs.writeFileSync(thumbnailPath, thumbnail, "base64");
 
     const newContents = contents.map((content) => {
       if (content.content_type === "image") {
-        // Memberi nama file image dengan menggunakan uuid
         const imageName = `${uuidv4()}.png`;
         const imagePath = path.join(articleFolder, imageName);
         fs.writeFileSync(imagePath, content.image_url, "base64");
@@ -96,7 +93,6 @@ const updateArticle = async (req, res) => {
       `../images/article-images/${articleId}`
     );
 
-    // Membuat folder artikel jika belum ada
     if (!fs.existsSync(articleFolder)) {
       fs.mkdirSync(articleFolder);
     }
@@ -131,10 +127,8 @@ const deleteArticle = async (req, res) => {
       `../images/article-images/${articleId}`
     );
 
-    // Menghapus folder artikel beserta isinya
-    fs.rmdirSync(articleFolder, { recursive: true });
+    await fs.promises.rm(articleFolder, { recursive: true });
 
-    // Menghapus artikel dari database
     await Article.findByIdAndDelete(req.params.idArticle);
     res.json({ message: "Article deleted" });
   } catch (error) {
