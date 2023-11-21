@@ -11,7 +11,7 @@ const articleSchema = new Schema({
   title: { type: String, required: true },
   thumbnail: { type: String, required: true },
   contents: [contentSchema],
-  _id: { type: Number, default: 0, unique: true },
+  _id: { type: Number, default: 0 }, // Menghapus opsi unique
 });
 
 articleSchema.pre("save", async function (next) {
